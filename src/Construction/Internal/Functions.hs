@@ -44,19 +44,34 @@ bound Lam{..} = variable `insert` bound body
 substitute :: Term -> Name -> Term -> Term
 substitute v@Var{..} n b | var == n  = b
                          | otherwise = v
-substitute _ _ _ = undefined -- here you have to implement another 2 cases
+substitute (App P Q) x N = App (substitute P x N) (substitute Q x N)
+substitute l@(Lam y M) x N
+  | x == y               = l
+  | notMember y (free N) = Lam y (substitute M x N)
+  | otherwise            = substitute (alpha l (free N)) x N
 
 -- | alpha reduction
 alpha :: Term -> Set Name -> Term
-alpha = undefined
+alpha v@(Var x) S  = v
+alpha (App P Q) S  = App (alpha P S) (alpha Q S)
+alpha l@(Lam x M) S 
+  | notMember x S = Lam x (alpha M S)
+  | otherwise     = Lam freshX (alpha (substitute M x (Var freshX)) S)
+     where freshX = fresh x (union S (free l))
 
 -- | beta reduction
 beta :: Term -> Term
-beta = undefined
+beta (App (Lam x M) N) = substitute (beta M) x (beta N)
+beta (App P Q) = App (beta P) (beta Q)
+beta (Lam x M) = Lam x (beta M)
+beta x = x
 
 -- | eta reduction
 eta :: Term -> Term
-eta = undefined
+eta l@(Lam x (App M x)) 
+  | notMember x (free M) = M
+  | otherwise            = l
+eta x = x
 
 -- | reduce term
 reduce :: Term -> Term
