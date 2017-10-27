@@ -72,6 +72,7 @@ eta :: Term -> Term
 eta l@(Lam x (App m (Var y))) 
   | (notMember x (free m)) && (x == y) = m
   | otherwise                          = l
+eta x = x
 
 -- | reduce term
 reduce :: Term -> Term
@@ -79,3 +80,4 @@ reduce term = let term' = beta term
               in if term' == term
                  then eta term
                  else reduce term'
+                            
