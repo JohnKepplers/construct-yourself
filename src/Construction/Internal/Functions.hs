@@ -53,9 +53,9 @@ substitute l@(Lam y m) x n
 -- | alpha reduction
 alpha :: Term -> Set Name -> Term
 alpha v@(Var x) s  = v
-alpha (App p q) s  = App (alpha P s) (alpha Q s)
+alpha (App p q) s  = App (alpha p s) (alpha q s)
 alpha l@(Lam x m) s 
-  | notMember x s = Lam x (alpha M s)
+  | notMember x s = Lam x (alpha m s)
   | otherwise     = Lam freshX (alpha (substitute m x (Var freshX)) s)
      where freshX = fresh x (union s (free l))
 
