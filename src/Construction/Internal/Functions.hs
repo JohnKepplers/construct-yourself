@@ -68,10 +68,9 @@ beta x = x
 
 -- | eta reduction
 eta :: Term -> Term
-eta l@(Lam x (App m x)) 
-  | notMember x (free m) = m
-  | otherwise            = l
-eta x = x
+eta l@(Lam x (App m (Var y))) 
+  | (notMember x (free m)) && (x == y) = m
+  | otherwise                          = l
 
 -- | reduce term
 reduce :: Term -> Term
