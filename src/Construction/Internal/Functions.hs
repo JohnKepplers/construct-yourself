@@ -56,8 +56,9 @@ alpha v@(Var x) s  = v
 alpha (App p q) s  = App (alpha p s) (alpha q s)
 alpha l@(Lam x m) s 
   | notMember x s = Lam x (alpha m s)
-  | otherwise     = Lam freshX (alpha (substitute m x (Var freshX)) s)
-     where freshX = fresh x (union s (free l))
+  | otherwise     = Lam freshx (alpha (substitute m x (Var freshx)) s)
+     where freshx = fresh (union s (free l))
+    
 
 -- | beta reduction
 beta :: Term -> Term
