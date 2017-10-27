@@ -44,32 +44,32 @@ bound Lam{..} = variable `insert` bound body
 substitute :: Term -> Name -> Term -> Term
 substitute v@Var{..} n b | var == n  = b
                          | otherwise = v
-substitute (App P Q) x N = App (substitute P x N) (substitute Q x N)
-substitute l@(Lam y M) x N
+substitute (App p q) x n = App (substitute p x n) (substitute q x n)
+substitute l@(Lam y m) x n
   | x == y               = l
-  | notMember y (free N) = Lam y (substitute M x N)
-  | otherwise            = substitute (alpha l (free N)) x N
+  | notMember y (free n) = Lam y (substitute m x n)
+  | otherwise            = substitute (alpha l (free n)) x n
 
 -- | alpha reduction
 alpha :: Term -> Set Name -> Term
-alpha v@(Var x) S  = v
-alpha (App P Q) S  = App (alpha P S) (alpha Q S)
-alpha l@(Lam x M) S 
-  | notMember x S = Lam x (alpha M S)
-  | otherwise     = Lam freshX (alpha (substitute M x (Var freshX)) S)
-     where freshX = fresh x (union S (free l))
+alpha v@(Var x) s  = v
+alpha (App p q) s  = App (alpha P s) (alpha Q s)
+alpha l@(Lam x m) s 
+  | notMember x s = Lam x (alpha M s)
+  | otherwise     = Lam freshX (alpha (substitute m x (Var freshX)) s)
+     where freshX = fresh x (union s (free l))
 
 -- | beta reduction
 beta :: Term -> Term
-beta (App (Lam x M) N) = substitute (beta M) x (beta N)
-beta (App P Q) = App (beta P) (beta Q)
-beta (Lam x M) = Lam x (beta M)
+beta (App (Lam x m) n) = substitute (beta m) x (beta n)
+beta (App p q) = App (beta p) (beta q)
+beta (Lam x m) = Lam x (beta m)
 beta x = x
 
 -- | eta reduction
 eta :: Term -> Term
-eta l@(Lam x (App M x)) 
-  | notMember x (free M) = M
+eta l@(Lam x (App m x)) 
+  | notMember x (free m) = m
   | otherwise            = l
 eta x = x
 
