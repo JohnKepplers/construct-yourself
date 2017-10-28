@@ -21,6 +21,17 @@ import           Data.Text                   (pack)
 -- Context is just set of names that are in our context.
 type Context = Set Name
 
+instance Eq Term where
+
+Var x == Var y = x == y
+
+App p1 q1 == App p2 q2 = (p1 == q1) && (q1 == q2)
+
+Lam x1 p1  == Lam x2 p2 = (substitute p2 x2 (Var x1)) == p1
+
+_ == _ = False
+
+
 -- | @fresh@ generates new variable different from every variables in set.
 fresh :: Set Name -> Name
 fresh conflicts = head . dropWhile (`member` conflicts) $ nameGen -- This is ugly name generator. Make it better.
