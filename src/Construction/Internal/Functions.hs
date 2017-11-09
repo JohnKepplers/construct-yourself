@@ -22,10 +22,11 @@ import           Data.Text                   (pack)
 type Context = Set Name
 
 instance Eq Term where
-   Var x == Var y = x == y
-   App p1 q1 == App p2 q2 = (p1 == q1) && (p2 == q2)
-   Lam x1 p1 == Lam x2 p2 = (substitute p2 x2 (Var x1)) == p1
-   _ = _ = False
+  Var x == Var y         = x == y
+  App p1 q1 == App p2 q2 = p1 == p2 && q1 == q2
+  Lam x1 m1 == Lam x2 m2 = substitute m1 x1 (Var freshx) == substitute m2 x2 (Var freshx)
+     where freshx = fresh (union (free m1) (free m2))
+  _ == _                 = False
 
 -- | @fresh@ generates new variable different from every variables in set.
 fresh :: Set Name -> Name
