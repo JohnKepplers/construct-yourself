@@ -26,7 +26,7 @@ bracketP = try $ between (char '(') (char ')') $ termP
 
 lamP :: Parser Term
 lamP =  try $ between (char '(') (char ')') $
-        Lam <$> (pack <$> (many1 (char '\\') *> nameP)) <*> ((char '.') *> termP)
+        Lam <$> (pack <$> (many1 (char '\\') *> nameP)) <*> (char '.' *> termP)
 
 nameP :: Parser String
 nameP = (:) <$> char 'x' <*> many digit
