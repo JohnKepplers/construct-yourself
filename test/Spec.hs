@@ -17,6 +17,7 @@ main = hspec $ do
     describe "Beta test" testBeta
     describe "Eta test" testEta
     describe "Reduce test" testReduce
+    describe "Equal test" testEqual
 
 varX, varX0, varX1, varX2 :: Term
 varX = Var "x"
@@ -118,3 +119,9 @@ testReduce = do
     it "#5" $ reduce (App (App lamK varX) varX2) `shouldBe` varX
     it "#6" $ reduce (Lam "x0" (App (App (App lamK varX) varX2) varX0)) `shouldBe` varX
       
+testEqual :: SpecWith ()
+testEqual = do
+    it "#1" $ Lam "x" (Var "x") `shouldBe` Lam "y" (Var "y")
+    it "#2" $ reduce (App lamK lamId) `shouldBe` lamKK -- K I = K*
+    let lamS = Lam "x" (Lam "y" (Lam "z" $ App (App (Var "x") (Var "z")) (App (Var "y") (Var "z"))))
+    it "#3" $ reduce (App (App lamS lamK) lamK) `shouldBe` lamId -- S K K = I
