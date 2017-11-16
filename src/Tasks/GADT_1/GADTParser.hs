@@ -5,6 +5,7 @@
 module Tasks.GADT_1.GADTParser where
 
 import           Data.Text              (pack)
+import           Data.Char              (digitToInt)
 import           Tasks.GADT_1.GADTExpr
 import           Text.Parsec.Char       (char, digit, space, string)
 import           Text.Parsec.Combinator (between, many1)
@@ -13,11 +14,13 @@ import           Text.Parsec.Prim       (many, parseTest, try, (<|>))
 import           Text.Parsec.Text       (Parser)
 import           Text.Parsec.Token
 
+f = (\x -> BLit (x == 'T'))
+
 iLitP :: Parser (Lit Int)
-iLitP = undefined
+iLitP = (\x -> ILit (read x)) <$> (many1 digit)
 
 bLitP :: Parser (Lit Bool)
-bLitP = undefined
+bLitP = f <$> char 'T' <|> f <$>  char 'F'
 
 iiLitP :: Parser (Expr Int)
 iiLitP = Lit <$> iLitP
@@ -26,24 +29,30 @@ bbLitP :: Parser (Expr Bool)
 bbLitP = Lit <$> bLitP
 
 addP :: Parser (Expr Int)
-addP = undefined
+addP = Add <$> (spacedP iiLitP <* char '+') <*> spacedP parse <|> Add 
+    <$> (spacedP (try (bracketP parse)) <* char '+') <*> spacedP parse
+       
 
 leqP :: Parser (Expr Bool)
-leqP = Leq <$> (parse <* char '<') <*> parse
+leqP =  Leq <$> try (parse <* string "<=") <*> parse <|> Leq 
+    <$> (parse <* char '<') <*> parse
 
 andP :: Parser (Expr Bool)
-andP = undefined
+andP = And <$> try (spacedP bbLitP <* string "&&") <*> spacedP parse <|> And 
+    <$> (spacedP (try (bracketP parse)) <* string "&&") <*> spacedP parse
+       
 
 spacedP :: Parser a -> Parser a
 spacedP p = (many space *> p) <* many space
 
 bracketP :: Parser a -> Parser a
-bracketP = undefined
+bracketP = between (char '(') (char ')')
 
 class MyParse a where
   parse :: Parser (Expr a)
 
 instance MyParse Int where
-  parse = undefined
+  parse = try (spacedP addP) <|> try (bracketP parse) <|> spacedP iiLitP
+
 instance MyParse Bool where
-  parse = undefined
+  parse = try (spacedP leqP) <|> try (spacedP andP) <|> try (bracketP parse) <|> spacedP bbLitP
