@@ -5,7 +5,6 @@
 module Tasks.GADT_1.GADTParser where
 
 import           Data.Text              (pack)
-import           Data.Char              (digitToInt)
 import           Tasks.GADT_1.GADTExpr
 import           Text.Parsec.Char       (char, digit, space, string)
 import           Text.Parsec.Combinator (between, many1)
@@ -17,10 +16,10 @@ import           Text.Parsec.Token
 f = (\x -> BLit (x == 'T'))
 
 iLitP :: Parser (Lit Int)
-iLitP = (\x -> ILit (read x)) <$> (many1 digit)
+iLitP = try (spacedP ((ILit . read) <$> many1 digit))
 
 bLitP :: Parser (Lit Bool)
-bLitP = f <$> char 'T' <|> f <$>  char 'F'
+bLitP = try (f <$> spacedP (char 'T')) <|> try (f <$>  spacedP (char 'F'))
 
 iiLitP :: Parser (Expr Int)
 iiLitP = Lit <$> iLitP
@@ -29,30 +28,28 @@ bbLitP :: Parser (Expr Bool)
 bbLitP = Lit <$> bLitP
 
 addP :: Parser (Expr Int)
-addP = Add <$> (spacedP iiLitP <* char '+') <*> spacedP parse <|> Add 
-    <$> (spacedP (try (bracketP parse)) <* char '+') <*> spacedP parse
-       
+addP = try (Add <$> (iiLitP <* char '+') <*> parse) 
+         <|> try (Add <$> ((bracketP parse) <* char '+') <*> parse)
 
 leqP :: Parser (Expr Bool)
-leqP =  Leq <$> try (parse <* string "<=") <*> parse <|> Leq 
-    <$> (parse <* char '<') <*> parse
+leqP = try $ Leq <$> (parse <* char '<') <*> parse
 
 andP :: Parser (Expr Bool)
-andP = And <$> try (spacedP bbLitP <* string "&&") <*> spacedP parse <|> And 
-    <$> (spacedP (try (bracketP parse)) <* string "&&") <*> spacedP parse
-       
+andP = try (And <$> (leqP <* string "&&") <*> parse) 
+         <|> try (And <$> (bbLitP <* string "&&") <*> parse) 
+             <|> try (And <$> ((bracketP parse) <* string "&&") <*> parse)
 
 spacedP :: Parser a -> Parser a
 spacedP p = (many space *> p) <* many space
 
 bracketP :: Parser a -> Parser a
-bracketP = between (char '(') (char ')')
+bracketP p = try (spacedP (between (char '(') (char ')')  ((spacedP p))))
 
 class MyParse a where
   parse :: Parser (Expr a)
 
 instance MyParse Int where
-  parse = try (spacedP addP) <|> try (bracketP parse) <|> spacedP iiLitP
+    parse = addP <|> iiLitP <|> (bracketP parse)
 
 instance MyParse Bool where
-  parse = try (spacedP leqP) <|> try (spacedP andP) <|> try (bracketP parse) <|> spacedP bbLitP
+    parse = andP <|> leqP <|> bbLitP <|> (bracketP parse)
