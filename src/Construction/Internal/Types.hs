@@ -31,9 +31,9 @@ newtype Substitution = Substitution { getSubs :: Map Name Type } -- Substitute t
 type Equation = (Type, Type) -- Equation on types
 
 instance Monoid Context where
-  mempty = undefined
-  Context a `mappend` Context b = undefined
+  mempty = Context empty
+  Context a `mappend` Context b = Context (union a b)
 
 instance Monoid Substitution where
-  mempty = undefined
-  Substitution a `mappend` Substitution b = undefined
+  mempty = Substitution empty
+  Substitution a `mappend` Substitution b = Substitution (union a b)
