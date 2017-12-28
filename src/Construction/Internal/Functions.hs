@@ -6,10 +6,10 @@
 
 
 module Construction.Internal.Functions
-  ( Context (..)        -- make restrictions is good practice. As you can see here,
+  ( Context (..)        -- make restrictions is good practice. As you can see here
   , fresh, free, bound  -- we make "public" not all functions, but only Context, fresh, ...
   , reduce, substitute, alpha, beta, eta
-  )where
+  ) where
 
 import           Construction.Internal.Types (Name, Term (..))
 import           Data.Set                    (Set, delete, empty, insert,
@@ -20,13 +20,6 @@ import           Data.Text                   (pack)
 
 -- Context is just set of names that are in our context.
 type Context = Set Name
-
-instance Eq Term where
-  Var x == Var y         = x == y
-  App p1 q1 == App p2 q2 = p1 == p2 && q1 == q2
-  Lam x1 m1 == Lam x2 m2 = substitute m1 x1 (Var freshx) == substitute m2 x2 (Var freshx)
-     where freshx = fresh (union (free m1) (free m2))
-  _ == _                 = False
 
 -- | @fresh@ generates new variable different from every variables in set.
 fresh :: Set Name -> Name
@@ -47,39 +40,53 @@ bound Var{}   = empty
 bound App{..} = bound algo `union` bound arg
 bound Lam{..} = variable `insert` bound body
 
--- a[n := b] - substiturion
-substitute :: Term -> Name -> Term -> Term
-substitute v@Var{..} n b | var == n  = b
-                         | otherwise = v
-substitute (App p q) x n = App (substitute p x n) (substitute q x n)
-substitute l@(Lam y m) x n
-  | x == y               = l
-  | notMember y (free n) = Lam y (substitute m x n)
-  | otherwise            = substitute (alpha l (free n)) x n
 
--- | alpha reduction
 alpha :: Term -> Set Name -> Term
-alpha v@(Var x) s  = v
-alpha (App p q) s  = App (alpha p s) (alpha q s)
-alpha l@(Lam x m) s 
-  | notMember x s = Lam x (alpha m s)
-  | otherwise     = Lam freshx (alpha (substitute m x (Var freshx)) s)
-     where freshx = fresh (union s (free l))
-    
+alpha Lam{..} conflicts | hasConflict = let all_conflicts = conflicts `union` free body
+                                            n_variable = fresh all_conflicts
+                                            n_body = substitute body variable (Var n_variable)
+                                        in Lam n_variable n_body
+                        | otherwise   = Lam variable (alpha body conflicts)
+                      where hasConflict = variable `member` conflicts
+alpha App{..} conflicts = App (alpha algo conflicts) (alpha arg conflicts)
+alpha var _ = var
 
--- | beta reduction
 beta :: Term -> Term
-beta (App (Lam x m) n) = substitute (beta m) x (beta n)
-beta (App p q) = App (beta p) (beta q)
-beta (Lam x m) = Lam x (beta m)
-beta x = x
+beta (App (Lam n e1) e2) = substitute e1 n e2
+beta App{..} = let b_algo = beta algo
+               in if b_algo /= algo then App b_algo arg else App algo (beta arg)
+beta (Lam n e) = Lam n (beta e)
+beta var = var
 
--- | eta reduction
 eta :: Term -> Term
-eta l@(Lam x (App m (Var y))) 
-  | (notMember x (free m)) && (x == y) = m
-  | otherwise                          = l
-eta x = x
+eta l@(Lam v (App algo (Var e))) | hasEta    = algo
+                                 | otherwise = l
+  where hasEta = v == e && v `notMember` free algo
+eta term = term
+
+
+substitute :: Term -> Name -> Term -> Term
+substitute v@Var{..} n e | var == n  = e
+                         | otherwise = v
+substitute   App{..} n e = App (substitute algo n e) (substitute arg n e)
+substitute l@Lam{..} n e | variable == n = l
+                         | otherwise = let cond   = variable `member` free e
+                                           a_lam  = alpha l (free e)
+                                           s_body = substitute body n e
+                                       in if cond then substitute a_lam n e
+                                                  else Lam variable s_body
+
+
+instance Eq Term where
+  Var v1 == Var v2 = v1 == v2
+  App algo1 arg1 == App algo2 arg2 = algo1 == algo2 && arg1 == arg2
+  Lam v1 b1 == Lam v2 b2 = sub1 == sub2
+    where
+      freshVar = Var $ fresh $ free b1 `union` free b2
+      sub1 = substitute b1 v1 freshVar
+      sub2 = substitute b2 v2 freshVar
+  _ == _ = False
+
 
 -- | reduce term
 reduce :: Term -> Term
