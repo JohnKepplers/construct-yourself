@@ -31,9 +31,9 @@ newtype Substitution = Substitution { getSubs :: Map Name Type } -- Substitute t
 type Equation = (Type, Type) -- Equation on types
 
 instance Monoid Context where
-mempty = Context mempty
-Context a `mappend` Context b = Context $ a `mappend` b
+  mempty = Context mempty
+  Context a `mappend` Context b = Context $ a `mappend` b
 
 instance Monoid Substitution where
-mempty = Substitution mempty
-Substitution a `mappend` Substitution b = Substitution $ a `mappend` b
+  mempty = Substitution mempty
+  Substitution a `mappend` Substitution b = Substitution $ a `mappend` b
