@@ -81,7 +81,7 @@ test-suite task1-test
 test-suite stt-test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      test
-  main-is:             STTTest.hs
+  main-is:             STT.hs
   build-depends:       base
                      , construct-yourself
                      , QuickCheck
