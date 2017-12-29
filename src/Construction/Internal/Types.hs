@@ -1,13 +1,13 @@
 module Construction.Internal.Types
-  ( Name, Term(..)
+  ( Equation
+  , Name, Term(..)
   , Type (..), Context (..), Substitution (..)
-  , Equation
   ) where
 
-import Data.Text (Text) -- we want to import only Text from Data.Text.
-import Data.Map  (Map (..))
-import Data.Set  (Set (..))
-
+import           Data.Map  (Map (..), empty, keys, mapWithKey, toList,
+                            (!))
+import           Data.Set  (Set (..))
+import           Data.Text (Text, unpack)
 
 type Name = Text -- just alias, no more
 
@@ -20,20 +20,30 @@ data Term = Var { var :: Name }                     -- Variables: a, b, ...
 
 data Type = TVar { tvar :: Name }                   -- Type variables: a, b, ...
           | TArr { from :: Type, to :: Type }       -- Arrow types: a -> b
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord)
+
+instance Show Type where
+  show (TVar a)           = unpack a
+  show (TArr (TVar a) to) = unpack a ++ " -> " ++ show to
+  show (TArr from to)     = "("  ++ show from ++ ") -> " ++ show to
 
 newtype Context = Context { getCtx :: Map Name Type } -- Types of variables
-  deriving (Show)
+  deriving Eq
+
+instance Show Context where
+  show (Context context) = (tail . init) (concatMap (\(n, t) -> " " ++ unpack n ++ " : " ++ show t ++ ",") pairs)
+    where
+      pairs = toList context
 
 newtype Substitution = Substitution { getSubs :: Map Name Type } -- Substitute type variable by some type
-  deriving (Show)
+  deriving (Eq, Show)
 
 type Equation = (Type, Type) -- Equation on types
 
 instance Monoid Context where
   mempty = Context mempty
-  Context a `mappend` Context b = Context $ a `mappend` b
+  Context a `mappend` Context b = Context (a `mappend` b)
 
 instance Monoid Substitution where
   mempty = Substitution mempty
-  Substitution a `mappend` Substitution b = Substitution $ a `mappend` b
+  Substitution a `mappend` Substitution b = Substitution (a `mappend` b)
